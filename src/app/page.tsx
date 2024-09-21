@@ -1,11 +1,15 @@
-"use client";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import Chatbot from "@/components/Chatbot";
+import { getAgent, invokeBedrockAgent } from "@/lib/aws-bedrock";
 
-export default function Content() {
+export default async function Content() {
+  const agent = await getAgent("ZMEW4H1GQ4")
+  const agentAliasId = "P84SJGBGJS";
+  if (agent) {
+    const response = await invokeBedrockAgent(agentAliasId, agent.agentId as string, "what is the value of 9+5?")
+
+    console.log("Invoked agent response: ", response )
+  }
+
   return (
     <main className="flex h-screen">
       <section className="border border-2 w-full">
