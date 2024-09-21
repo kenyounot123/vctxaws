@@ -1,6 +1,7 @@
 import {
   BedrockAgentClient,
   GetAgentCommand,
+  CreateAgentCommand,
 } from "@aws-sdk/client-bedrock-agent";
 import {
   BedrockAgentRuntimeClient,
@@ -12,6 +13,24 @@ import { v4 as uuidv4 } from 'uuid';
  *
  * @return {FoundationModelDetails} - The list of available bedrock foundation models.
  */
+
+export const createAgent = async (
+  agentName:string,
+  foundationModel:string,
+  agentResourceRoleArn:string,
+  region = "us-east-1",
+) => {
+  const client = new BedrockAgentClient({ region });
+
+  const command = new CreateAgentCommand({
+    agentName,
+    foundationModel,
+    agentResourceRoleArn,
+  });
+  const response = await client.send(command);
+
+  return response.agent;
+};
 
 export const getAgent = async (agentId:string, region = "us-east-1") => {
   const client = new BedrockAgentClient({ region });
