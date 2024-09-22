@@ -1,36 +1,85 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Message } from "@/types/messages";
 
 export default function Chatbot() {
-  const [messages, setMessages] = useState([
+  const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
       content:
         "Hello! I'm your VALORANT esports team assistant. How can I help you with player scouting and recruitment today?",
     },
   ]);
-  const [input, setInput] = useState("");
+  const [messageInput, setMessageInput] = useState<string>("");
+  const messagesEndRef = useRef(null)
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
+
+  const scrollToBottom = () => {
+    setTimeout(() => {
+      (messagesEndRef.current as HTMLElement | null)?.scrollIntoView({
+        behavior: "smooth",
+        block: 'nearest',
+      });
+    }, 100);
+  }
 
   const handleSend = async () => {
-    if (input.trim() === "") return;
+    if (messageInput.trim() === "") return;
+    setMessageInput("");
+    const newMessages:Message[] = [
+      ...messages,
+      {
+        role: "user",
+        content: messageInput,
+      },
+      {
+        role: "assistant",
+        content: "",
+      },
+    ];
+    // get the latest message to handle agents's response
+    const lastMessageIndex = newMessages.length - 1
+    setMessages(newMessages);
 
-    setMessages((prev) => [...prev, { role: "user", content: input }]);
-    setInput("");
+    // when user sends a message it should send some POST request to
+    // an api endpoint and this should handle the chatting to bedrock agent 
+    // then update client with the agent's response and what not 
 
-    // Simulated response
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content:
-            "I'm processing your request about VALORANT esports players. Once integrated with Amazon Bedrock, I'll provide detailed insights based on the data sources provided.",
-        },
-      ]);
-    }, 1000);
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        body: JSON.stringify([
+          ...messages,
+          {
+            role: "user",
+            content: messageInput,
+          },
+        ]),
+      })
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+      const botResponse = await response.json()
+
+      setMessages((prevMessages) => {
+        // Get a copy of prev messages array and store it in updatedMessages
+        const updatedMessages = [...prevMessages];
+        // access the last message and update its content with the bot response
+        updatedMessages[lastMessageIndex] = {
+          ...updatedMessages[lastMessageIndex],
+          content: updatedMessages[lastMessageIndex].content + `${botResponse}`,
+        };
+        return updatedMessages;
+      });
+    } catch (error) {
+      console.log('Message sent failed', error)
+    }
   };
 
   return (
@@ -57,14 +106,15 @@ export default function Chatbot() {
             </div>
           </div>
         ))}
+        <div ref={messagesEndRef}></div>
       </ScrollArea>
       <div className="flex gap-2 p-4 bg-[#1F2933]">
         <Input
           type="text"
           placeholder="Ask about VALORANT players..."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyPress={(e) => e.key === "Enter" && handleSend()}
+          value={messageInput}
+          onChange={(e) => setMessageInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleSend()}
           className="bg-[#0F1923] text-white border-[#FF4655] placeholder-gray-400"
         />
         <Button

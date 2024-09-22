@@ -79,3 +79,7 @@ export const invokeBedrockAgent = async (agentAliasId:string,
     console.error(err);
   }
 };
+
+export async function addKnowledgeBase() {
+
+}
